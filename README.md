@@ -1,43 +1,78 @@
-# Renderização Programática de Vídeo Institucional
+# Renderização Programática de Vídeo
 
-Motor de renderização por composição programática para séries institucionais, eventos e branded content. Substitui templates manuais do After Effects por código versionável, com integração de assets dinâmicos (texto, imagem, áudio).
+Pipeline de **composição e renderização programática** de vídeos institucionais via código — sem depender de suites de edição manuais.
 
-## Como funciona
+---
 
-1. **Entrada**: JSON de composição (sequência de cenas, durações, fontes)
-2. **Compositor**: Python + Remotion-like pipeline (FFmpeg + ImageMagick)
-3. **Saída**: MP4 pronto para entrega final, com overlays, lower-thirds e branding
+## O que faz
 
-## Uso rápido
+1. **Importa projetos FCPXML** do DaVinci Resolve e extrai plano de edição legível (YAML)
+2. **Converte planos YAML** de volta para FCPXML válido — útil para geração em escala ou templates
+3. **Renderiza vídeo via FFmpeg** com cortes temporais e overlays de texto programáticos
+
+---
+
+## Componentes
+
+| Arquivo | Função |
+|---------|--------|
+| `extract_plan.py` | Extrai timeline A-roll/B-roll/Texto de um `.fcpxml` para YAML legível |
+| `yaml_to_fcpxml.py` | Converte plano YAML em `.fcpxml` pronto para importar no Resolve |
+| `ffmpeg_renderer.py` | Renderiza cortes + overlays de texto via FFmpeg, sem GUI |
+
+## Requisitos
+
+- Python 3.11+
+- FFmpeg instalado no PATH
+- PyYAML (`pip install -r requirements.txt`)
+
+## Uso
 
 ```bash
-python compositor.py assets/composicao_reuniao.json --output evento_final.mp4
+# 1. Extrair plano de um projeto Resolve
+python extract_plan.py projeto.fcpxml
+# Gera: projeto.yaml
+
+# 2. Converter plano YAML para FCPXML
+python yaml_to_fcpxml.py plano.yaml
+# Gera: plano.fcpxml
+
+# 3. Renderizar vídeo com cortes e overlays
+python ffmpeg_renderer.py
 ```
 
-## Exemplo de composição
+## Exemplo de plano YAML
 
-```json
-{
-  "titulo": "Assembleia Geral 2024",
-  "duracao": 120,
-  "cenas": [
-    {"tipo": "intro", "asset": "logo_animado.mp4", "duracao": 5},
-    {"tipo": "lower-third", "texto": "Dr. Silva — Diretor de Pesquisa", "duracao": 8},
-    {"tipo": "broll", "asset": "lab_cenas.mp4", "duracao": 45}
-  ]
-}
+```yaml
+timeline:
+  - type: a_roll
+    description: "Depoimento do pesquisador (midia: entrevista.mp4)"
+    in: 0.0
+    out: 45.5
+    duration: 45.5
+    start_in_source: 0.0
+  - type: b_roll
+    description: "Imagens do laboratorio (midia: lab.mp4)"
+    in: 10.0
+    out: 20.0
+    duration: 10.0
+    lane: 1
+    over: "Depoimento do pesquisador"
+  - type: text
+    description: "Dr. Silva — Coordenador"
+    in: 0.0
+    out: 5.0
+    duration: 5.0
+    lane: 2
 ```
 
-## Por que programático
+## Cenários de uso
 
-- Reutilização de composições entre episódios de série institucional
-- Versionamento via Git — histórico completo de alterações
-- Geração em lote (batch) para séries de 20+ episódios
-- Renderização em servidor sem interface gráfica (headless)
+- **Séries institucionais**: gerar múltiplos episódios a partir de um template YAML
+- **Comunicação interna**: produzir vídeos de resultado de pesquisa rapidamente
+- **Eventos**: cortes automáticos de palestras + overlays de identificação
+- **Compliance LGPD**: todo o processamento local, vídeo nunca sobe pra nuvem durante edição
 
-## Stack
+---
 
-- Python 3.10+
-- FFmpeg (renderização)
-- Pillow (overlays gráficos)
-- JSON Schema (validação de composições)
+**Stack:** Python, FFmpeg, FCPXML, YAML
